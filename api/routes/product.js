@@ -3,6 +3,19 @@ const mongoose = require('mongoose');
 const {ObjectID} = require('mongodb');
 const _ = require('lodash');
 const router = express.Router();
+const multer = require('multer');
+
+const storage = multer.diskStorage({
+    destination: (req,file, cb)=>{
+        cb(null, 'uploads');
+    },
+    filename: (req, file, cb)=>{
+        cb(null, file.originalname)
+    }
+});
+const upload = multer({
+    storage: storage
+});
 
 const Product = require('../models/products');
 
@@ -10,7 +23,7 @@ mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost:27017/shopRestApi',{useNewUrlParser: true});
 
 router.get('/', (req, res, next) =>{
-    Product.find().select('_id name price').then((docs)=>{
+    Product.find().select('_id name price productImage').then((docs)=>{
         let response = {
             count: docs.length,
             products: docs.map(doc=>{
@@ -18,6 +31,7 @@ router.get('/', (req, res, next) =>{
                     id: doc._id,
                     name: doc.name,
                     price: doc.price,
+                    productImage: doc.productImage,
                     request: {
                         type: 'GET',
                         url: `localhost:3000/products/${doc._id}`
@@ -30,20 +44,22 @@ router.get('/', (req, res, next) =>{
         res.status(500).json({error: e.message});
     });
 });
-router.post('/', (req, res, next) =>{
+router.post('/',upload.single('productImage'), (req, res, next) =>{
     let product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
-        price: req.body.price
+        price: req.body.price,
+        productImage: req.file.path
     });
+    console.log(req.file);
     product.save().then((doc)=>{
-        console.log(doc);
         res.status(201).json({
             text: "Product was created:",
             createdProduct: {
                 id: doc._id,
                 name: doc.name,
-                price: doc.price
+                price: doc.price,
+                productImage: doc.productImage
             }
         });
     });
@@ -54,7 +70,7 @@ router.get('/:productId', (req, res, next) =>{
     if (!ObjectID.isValid(id)){
         return res.status(400).json({error: 'Invalid product ID'});
     }
-    Product.findById(id).select('name price').then((doc)=>{
+    Product.findById(id).select('name price productImage').then((doc)=>{
         if(!doc){
             return res.status(404).json({error: 'Product not found'});
         }
@@ -74,11 +90,15 @@ router.patch('/:productId', (req, res, next) =>{
             return res.status(404).json({error: 'Product not found'});
         }
         res.status(202).json({
-            text: 'Product created',
+            text: 'Product updated',
             request: {
                 type: 'GET',
                 url: `localhost:3000/products/${id}`
             }
+        });
+    }).catch((e)=>{
+        res.status(500).json({
+            error: e.message
         });
     });
 });

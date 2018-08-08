@@ -19,6 +19,7 @@ app.use((req, res, next)=>{
     next();
 
 });
+app.use('/uploads', express.static('uploads'));
 
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);

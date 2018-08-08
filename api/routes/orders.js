@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const express = require('express');
 const {ObjectID} = require('mongodb');
+
 const router = express.Router();
 const Order = require('../models/orders');
 const Product = require('../models/products');
@@ -9,7 +10,7 @@ mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost:27017/shopRestApi',{useNewUrlParser: true});
 
 router.get('/', (req, res, next)=>{
-    Order.find().select('_id product quantity').populate('product', 'name').then(docs=>{
+    Order.find().select('_id product quantity').populate('product', 'name price productImage').then(docs=>{
         res.status(200).json({
             message: "Orders were fetched",
             count: docs.length,
