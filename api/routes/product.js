@@ -4,6 +4,7 @@ const {ObjectID} = require('mongodb');
 const _ = require('lodash');
 const router = express.Router();
 const multer = require('multer');
+const checkAuth = require('../middlewares/Auth');
 
 const storage = multer.diskStorage({
     destination: (req,file, cb)=>{
@@ -44,14 +45,13 @@ router.get('/', (req, res, next) =>{
         res.status(500).json({error: e.message});
     });
 });
-router.post('/',upload.single('productImage'), (req, res, next) =>{
+router.post('/', checkAuth, upload.single('productImage'), (req, res, next) =>{
     let product = new Product({
         _id: new mongoose.Types.ObjectId(),
         name: req.body.name,
         price: req.body.price,
         productImage: req.file.path
     });
-    console.log(req.file);
     product.save().then((doc)=>{
         res.status(201).json({
             text: "Product was created:",
@@ -79,7 +79,7 @@ router.get('/:productId', (req, res, next) =>{
         res.status(404).json({error: e.message});
     });
 });
-router.patch('/:productId', (req, res, next) =>{
+router.patch('/:productId', checkAuth, (req, res, next) =>{
     let id = req.params.productId;
     if (!ObjectID.isValid(id)){
         return res.status(400).json({error: 'Invalid product ID'});
@@ -102,7 +102,7 @@ router.patch('/:productId', (req, res, next) =>{
         });
     });
 });
-router.delete('/:productId', (req, res, next) =>{
+router.delete('/:productId', checkAuth, (req, res, next) =>{
     let id = req.params.productId;
     if(!ObjectID.isValid(id)){
         return res.status(400).json({error: 'Invalid product ID'});

@@ -2,11 +2,16 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const express = require('express');
 const {ObjectID} = require('mongodb');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 const User = require('../models/users');
 
+mongoose.Promise = global.Promise;
+mongoose.connect('mongodb://localhost:27017/shopRestApi',{useNewUrlParser: true});
+
 router.post('/signup', (req, res, next) =>{
+    console.log(req.body);
     User.find({email: req.body.email}).then((user)=>{
         if(user.length >0){
             return res.status(409).json({
@@ -15,6 +20,7 @@ router.post('/signup', (req, res, next) =>{
         } else {
             bcrypt.hash(req.body.password, 10, (err, hash)=>{
                 if(err){
+                    console.log(err);
                     return res.status(500).json({
                         error: err
                     });
@@ -33,6 +39,44 @@ router.post('/signup', (req, res, next) =>{
                         res.status(500).json({
                             error: e
                         });
+                    });
+                }
+            });
+        }
+    }).catch((e)=>{
+        res.status(500).json({
+            error: e
+        });
+    });
+});
+
+router.post('/signin', (req, res, next)=>{
+    User.find({email: req.body.email}).then((user)=>{
+        if(user.length < 1){
+            return res.status(400).json({
+                text: "Auth failed"
+            });
+        } else {
+            bcrypt.compare(req.body.password, user[0].password, (err, result)=>{
+                if (err){
+                    return res.status(401).json({
+                        text: "Auth failed"
+                    });
+                }
+                if (result){
+                    const token = jwt.sign({
+                        email: user[0].email,
+                        id: user[0]._id
+                    },"secretKey",{
+                        expiresIn: "1hr"
+                    });
+                    res.status(200).json({
+                        text: "Auth Successful",
+                        token: token
+                    });
+                } else{
+                    res.status(401).json({
+                        text: "Auth failed"
                     });
                 }
             });

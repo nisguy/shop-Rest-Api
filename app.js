@@ -3,7 +3,8 @@ const morgan = require('morgan');
 
 const productRoutes = require('./api/routes/product').router;
 const orderRoutes = require('./api/routes/orders').router;
-const signupRoutes = require('./api/routes/users');
+const userRoutes = require('./api/routes/users');
+const checkAuth = require('./api/middlewares/Auth');
 
 const app = express();
 app.use(morgan('dev'));
@@ -23,8 +24,8 @@ app.use((req, res, next)=>{
 app.use('/uploads', express.static('uploads'));
 
 app.use('/products', productRoutes);
-app.use('/orders', orderRoutes);
-app.use('/users', signupRoutes);
+app.use('/orders', checkAuth, orderRoutes);
+app.use('/users', userRoutes);
 
 app.use((req, res, next)=> {
     const error = new Error('Error: not found');
